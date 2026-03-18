@@ -38,14 +38,21 @@ export async function drainFormattedSystemEvents(params: {
     if (lower.includes("heartbeat poll") || lower.includes("heartbeat wake")) {
       return null;
     }
-    // Keep routine transport flaps out of normal prompt assembly; higher-signal
-    // channel-health issues (logged out, relink required, max-attempts, etc.)
-    // can still surface via their own system events.
+    // Suppress routine WhatsApp transport flaps (plain connect/disconnect)
+    // but preserve messages that carry a reason after ":" — those indicate
+    // actionable issues like logged-out or relink-required.
     if (
       lower.startsWith("whatsapp gateway connected") ||
       lower.startsWith("whatsapp gateway disconnected")
     ) {
-      return null;
+      const baseLen = lower.startsWith("whatsapp gateway connected")
+        ? "whatsapp gateway connected".length
+        : "whatsapp gateway disconnected".length;
+      const tail = trimmed.slice(baseLen);
+      // If the remainder contains ":" it likely carries a reason — keep it.
+      if (!tail.includes(":")) {
+        return null;
+      }
     }
     if (trimmed.startsWith("Node:")) {
       return trimmed.replace(/ · last input [^·]+/i, "").trim();

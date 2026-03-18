@@ -1698,6 +1698,46 @@ describe("drainFormattedSystemEvents", () => {
       vi.useRealTimers();
     }
   });
+
+  it("preserves WhatsApp disconnect events that carry a reason after colon", async () => {
+    vi.useFakeTimers();
+    try {
+      const timestamp = new Date("2026-03-17T07:32:00Z");
+      const expectedTimestamp = formatZonedTimestamp(timestamp, { displaySeconds: true });
+      vi.setSystemTime(timestamp);
+
+      // Routine flap without reason — suppressed
+      enqueueSystemEvent("WhatsApp gateway disconnected (status 428)", {
+        sessionKey: "agent:main:main",
+      });
+      // Disconnect with reason after ":" — preserved
+      enqueueSystemEvent("WhatsApp gateway disconnected: logged out", {
+        sessionKey: "agent:main:main",
+      });
+      enqueueSystemEvent("WhatsApp gateway disconnected: relink required", {
+        sessionKey: "agent:main:main",
+      });
+
+      const result = await drainFormattedSystemEvents({
+        cfg: {} as OpenClawConfig,
+        sessionKey: "agent:main:main",
+        isMainSession: false,
+        isNewSession: false,
+      });
+
+      expect(expectedTimestamp).toBeDefined();
+      expect(result).toContain(
+        `System: [${expectedTimestamp}] WhatsApp gateway disconnected: logged out`,
+      );
+      expect(result).toContain(
+        `System: [${expectedTimestamp}] WhatsApp gateway disconnected: relink required`,
+      );
+      expect(result).not.toContain("status 428");
+    } finally {
+      resetSystemEventsForTest();
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("persistSessionUsageUpdate", () => {
