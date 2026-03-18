@@ -85,9 +85,18 @@ export function monitorMSTeamsProvider(opts: MonitorMSTeamsOpts): Promise<Monito
   }
   activeInstancePromise = _startMSTeamsProvider(opts);
   // Clear the singleton on failure so a future attempt can retry.
-  activeInstancePromise.catch(() => {
-    activeInstancePromise = null;
-  });
+  // Also clear on early-return no-op resolutions (disabled provider, missing
+  // creds) where no server was started -- detected by app being null.
+  activeInstancePromise.then(
+    (result) => {
+      if (result.app === null) {
+        activeInstancePromise = null;
+      }
+    },
+    () => {
+      activeInstancePromise = null;
+    },
+  );
   return activeInstancePromise;
 }
 
