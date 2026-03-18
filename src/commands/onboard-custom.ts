@@ -616,26 +616,15 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
   const existingProvider = providers[providerId];
   const existingModels = Array.isArray(existingProvider?.models) ? existingProvider.models : [];
   const hasModel = existingModels.some((model) => model.id === modelId);
-  const nextModel = isAzure
-    ? {
-        id: modelId,
-        name: `${modelId} (Custom Provider)`,
-        contextWindow: DEFAULT_CONTEXT_WINDOW,
-        maxTokens: DEFAULT_MAX_TOKENS,
-        input: ["text", "image"] as Array<"text" | "image">,
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        reasoning: true,
-        compat: { supportsStore: false },
-      }
-    : {
-        id: modelId,
-        name: `${modelId} (Custom Provider)`,
-        contextWindow: DEFAULT_CONTEXT_WINDOW,
-        maxTokens: DEFAULT_MAX_TOKENS,
-        input: ["text"] as ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        reasoning: false,
-      };
+  const nextModel = {
+    id: modelId,
+    name: `${modelId} (Custom Provider)`,
+    contextWindow: DEFAULT_CONTEXT_WINDOW,
+    maxTokens: DEFAULT_MAX_TOKENS,
+    input: ["text"] as ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    reasoning: false,
+  };
   const mergedModels = hasModel
     ? existingModels.map((model) =>
         model.id === modelId
@@ -678,18 +667,6 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
   };
 
   config = applyPrimaryModel(config, modelRef);
-  if (isAzure) {
-    config = {
-      ...config,
-      agents: {
-        ...config.agents,
-        defaults: {
-          ...config.agents?.defaults,
-          thinkingDefault: config.agents?.defaults?.thinkingDefault ?? "medium",
-        },
-      },
-    };
-  }
   if (alias) {
     config = {
       ...config,
