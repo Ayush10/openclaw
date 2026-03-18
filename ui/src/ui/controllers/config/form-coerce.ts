@@ -65,12 +65,13 @@ export function coerceFormValues(value: unknown, schema: JsonSchema): unknown {
 
     // Try number/boolean coercion for string values
     if (typeof value === "string") {
-      if (hasStringVariant) {
-        return value;
-      }
       for (const variant of variants) {
         const variantType = schemaType(variant);
-        if (variantType === "number" || variantType === "integer") {
+        // Skip number coercion when the union already accepts strings —
+        // the string value is valid as-is and coercing numeric strings
+        // (especially large ones like Discord snowflake IDs) risks
+        // precision loss.
+        if ((variantType === "number" || variantType === "integer") && !hasStringVariant) {
           const coerced = coerceNumberString(value, variantType === "integer");
           if (coerced === undefined || typeof coerced === "number") {
             return coerced;

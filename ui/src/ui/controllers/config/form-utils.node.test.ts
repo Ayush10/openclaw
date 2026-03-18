@@ -507,7 +507,7 @@ describe("coerceFormValues", () => {
     expect(coerced.flag).toBe(true);
   });
 
-  it("preserves string values in boolean-or-string union", () => {
+  it("coerces boolean strings in boolean-or-string union", () => {
     const schema: JsonSchema = {
       type: "object",
       properties: {
@@ -518,6 +518,22 @@ describe("coerceFormValues", () => {
     };
     const form = { flag: "true" };
     const coerced = coerceFormValues(form, schema) as Record<string, unknown>;
-    expect(coerced.flag).toBe("true");
+    // "true" matches the boolean branch and gets coerced
+    expect(coerced.flag).toBe(true);
+  });
+
+  it("preserves non-boolean strings in boolean-or-string union", () => {
+    const schema: JsonSchema = {
+      type: "object",
+      properties: {
+        flag: {
+          anyOf: [{ type: "boolean" }, { type: "string" }],
+        },
+      },
+    };
+    const form = { flag: "hello" };
+    const coerced = coerceFormValues(form, schema) as Record<string, unknown>;
+    // "hello" does not match boolean, falls through to string
+    expect(coerced.flag).toBe("hello");
   });
 });
